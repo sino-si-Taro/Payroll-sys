@@ -1,4 +1,4 @@
-import { useState } from 'react';
+/*import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authApi, extractData } from '../api';
 import { setAuthUser } from '../utils/auth';
@@ -88,6 +88,36 @@ export default function Login() {
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
+        </div>
+      </div>
+    </div>
+  );
+}*/
+
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { setAuthUser } from '../utils/auth';
+
+export default function Login() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Set a fake user for demo access
+    setAuthUser({
+      id: 1,
+      name: 'Demo User',
+      email: 'demo@example.com',
+      role: 'admin',
+    });
+    navigate('/', { replace: true });
+  }, [navigate]);
+
+  return (
+    <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
+      <div className="card shadow-sm border-0" style={{ width: '100%', maxWidth: '420px' }}>
+        <div className="card-body p-4 p-md-5 text-center">
+          <h1 className="h4 mb-2">Payroll System</h1>
+          <p className="text-muted mb-4">Login is temporarily disabled for demo access.</p>
         </div>
       </div>
     </div>

@@ -3,17 +3,18 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ApiResponse;
 use App\Models\PayrollSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PayrollSettingController extends Controller
 {
+    use ApiResponse;
+
     public function show(): JsonResponse
     {
-        return response()->json([
-            'data' => PayrollSetting::current(),
-        ]);
+        return $this->success(PayrollSetting::current());
     }
 
     public function update(Request $request): JsonResponse
@@ -26,9 +27,6 @@ class PayrollSettingController extends Controller
         $settings = PayrollSetting::current();
         $settings->update($validated);
 
-        return response()->json([
-            'data' => $settings->fresh(),
-            'message' => 'Payroll settings updated successfully.',
-        ]);
+        return $this->success($settings->fresh(), 'Payroll settings updated successfully.');
     }
 }

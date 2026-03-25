@@ -5,16 +5,16 @@ class AuthResource {
     return apiClient.post('/auth/login', credentials);
   }
 
-  me(userId) {
-    return apiClient.get('/auth/me', {
-      params: {
-        user_id: userId,
-      },
-    });
+  me() {
+    return apiClient.get('/auth/me');
   }
 
   changePassword(payload) {
     return apiClient.post('/auth/change-password', payload);
+  }
+
+  logout() {
+    return apiClient.post('/auth/logout');
   }
 }
 

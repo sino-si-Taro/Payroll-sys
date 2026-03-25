@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ApiResponse;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AdminHrAccountController extends Controller
 {
+    use ApiResponse;
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -24,14 +27,11 @@ class AdminHrAccountController extends Controller
             'role' => 'hr',
         ]);
 
-        return response()->json([
-            'data' => [
-                'id' => $hrUser->id,
-                'name' => $hrUser->name,
-                'email' => $hrUser->email,
-                'role' => $hrUser->role,
-            ],
-            'message' => 'HR account created successfully.',
-        ], 201);
+        return $this->success([
+            'id' => $hrUser->id,
+            'name' => $hrUser->name,
+            'email' => $hrUser->email,
+            'role' => $hrUser->role,
+        ], 'HR account created successfully.', 201);
     }
 }

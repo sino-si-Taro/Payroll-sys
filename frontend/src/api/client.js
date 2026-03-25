@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getActorUserId } from '../utils/auth';
+import { getAuthToken, clearAuth } from '../utils/auth';
 
 /**
  * REST API Client configuration following the principles from:
@@ -18,16 +18,11 @@ const apiClient = axios.create({
   },
 });
 
-// Step 6: Authentication & Authorization
+// Step 6: Authentication via Sanctum Bearer Token
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
+  const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  const actorUserId = getActorUserId();
-  if (actorUserId) {
-    config.headers['X-Actor-User-Id'] = actorUserId;
   }
 
   return config;
@@ -35,11 +30,9 @@ apiClient.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Step 2, 3, 11: HTTP Status Codes, Consistent JSON, and Error Structure
+// Step 2, 3, 7: HTTP Status Codes, Consistent JSON, and Error Structure
 apiClient.interceptors.response.use(
   (response) => {
-    // Professional APIs return consistent data structures
-    // Usually { data: ..., meta: ... } or just the data if standardized
     return response;
   },
   (error) => {
@@ -47,31 +40,35 @@ apiClient.interceptors.response.use(
 
     if (response) {
       const { status, data } = response;
-      
-      // Step 2 & 11: Handle specific status codes and error structures
+      // Extract structured error message from the new error envelope
+      const errorMessage = data?.error?.message || data?.message || 'An unknown error occurred';
+
       switch (status) {
         case 400:
-          console.error('Bad Request:', data.message || 'Validation failed');
+          console.error('Bad Request:', errorMessage);
           break;
         case 401:
-          console.error('Unauthorized: Redirecting to login...');
-          // localStorage.removeItem('auth_token');
-          // window.location.href = '/login';
+          console.error('Unauthorized:', errorMessage);
+          clearAuth();
+          window.location.href = '/login';
           break;
         case 403:
-          console.error('Forbidden: You do not have permission.');
+          console.error('Forbidden:', errorMessage);
           break;
         case 404:
-          console.error('Not Found:', data.message || 'Resource not found');
+          console.error('Not Found:', errorMessage);
           break;
         case 422:
-          console.error('Validation Errors:', data.errors);
+          console.error('Validation Errors:', data?.error?.details || data?.errors);
+          break;
+        case 429:
+          console.error('Rate Limited:', errorMessage);
           break;
         case 500:
-          console.error('Internal Server Error:', data.message || 'Something went wrong on the server');
+          console.error('Internal Server Error:', errorMessage);
           break;
         default:
-          console.error(`Error ${status}:`, data.message || 'An unknown error occurred');
+          console.error(`Error ${status}:`, errorMessage);
       }
     } else {
       console.error('Network Error: Please check your connection.');

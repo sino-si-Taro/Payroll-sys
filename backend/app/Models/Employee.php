@@ -24,19 +24,15 @@ class Employee extends Model
         'hire_date',
         'employment_status',
         'basic_salary',
-        'attendance_pin',
     ];
 
-    protected $hidden = [
-        'attendance_pin',
-    ];
+    protected $hidden = [];
 
     protected function casts(): array
     {
         return [
             'hire_date' => 'date',
             'basic_salary' => 'decimal:2',
-            'attendance_pin' => 'hashed',
         ];
     }
 
@@ -66,10 +62,7 @@ class Employee extends Model
         return $this->hasMany(LeaveRequest::class);
     }
 
-    public function attendanceRecords(): HasMany
-    {
-        return $this->hasMany(AttendanceRecord::class);
-    }
+
 
     public function payslips(): HasMany
     {

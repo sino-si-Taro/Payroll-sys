@@ -3,24 +3,42 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ApiResponse;
 use App\Models\Employee;
-use App\Models\Payslip;
-use App\Models\PayrollSetting;
+use App\Services\PayslipCalculationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(
+        private readonly PayslipCalculationService $payslipService,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
-        $limit = (int) $request->integer('limit', 15);
+        $limit = $request->integer('limit', 15);
+        $sortField = $request->string('sort', 'last_name')->toString();
+        $sortOrder = $request->string('order', 'asc')->toString();
+
+        $allowedSorts = ['last_name', 'first_name', 'hire_date', 'basic_salary', 'employee_no', 'created_at'];
+        if (! in_array($sortField, $allowedSorts, true)) {
+            $sortField = 'last_name';
+        }
+        $sortOrder = in_array($sortOrder, ['asc', 'desc'], true) ? $sortOrder : 'asc';
 
         $query = Employee::query()
             ->where('employment_status', '!=', 'inactive')
             ->with('department:id,name')
-            ->orderBy('last_name')
-            ->orderBy('first_name');
+            ->orderBy($sortField, $sortOrder);
+
+        // Secondary sort for consistency
+        if ($sortField !== 'last_name') {
+            $query->orderBy('last_name');
+        }
 
         if ($request->filled('search')) {
             $search = $request->string('search');
@@ -39,17 +57,11 @@ class EmployeeController extends Controller
             $query->where('employment_status', $request->string('employment_status'));
         }
 
-        $employees = $query->paginate($limit);
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->integer('department_id'));
+        }
 
-        return response()->json([
-            'data' => $employees->items(),
-            'meta' => [
-                'current_page' => $employees->currentPage(),
-                'last_page' => $employees->lastPage(),
-                'per_page' => $employees->perPage(),
-                'total' => $employees->total(),
-            ],
-        ]);
+        return $this->paginated($query->paginate($limit));
     }
 
     public function store(Request $request): JsonResponse
@@ -75,21 +87,16 @@ class EmployeeController extends Controller
         }
 
         $employee = Employee::create($validated)->load('department:id,name');
-        $this->ensureMonthlyPayslip($employee);
+        $this->payslipService->ensureMonthlyPayslip($employee);
 
-        return response()->json([
-            'data' => $employee,
-            'message' => 'Employee created successfully.',
-        ], 201);
+        return $this->success($employee, 'Employee created successfully.', 201);
     }
 
     public function show(Employee $employee): JsonResponse
     {
         $employee->load('department:id,name');
 
-        return response()->json([
-            'data' => $employee,
-        ]);
+        return $this->success($employee);
     }
 
     public function update(Request $request, Employee $employee): JsonResponse
@@ -111,10 +118,7 @@ class EmployeeController extends Controller
 
         $employee->update($validated);
 
-        return response()->json([
-            'data' => $employee->fresh('department:id,name'),
-            'message' => 'Employee updated successfully.',
-        ]);
+        return $this->success($employee->fresh('department:id,name'), 'Employee updated successfully.');
     }
 
     public function destroy(Employee $employee): JsonResponse
@@ -130,39 +134,6 @@ class EmployeeController extends Controller
             $linkedUser->delete();
         }
 
-        return response()->json([
-            'message' => 'Employee offboarded successfully.',
-        ]);
-    }
-
-    private function ensureMonthlyPayslip(Employee $employee): void
-    {
-        $settings = PayrollSetting::current();
-        $basicSalary = (float) ($employee->basic_salary ?? 0);
-        $estimatedTax = round($basicSalary * (float) $settings->tax_rate, 2);
-        $estimatedPhilHealth = round($basicSalary * (float) $settings->philhealth_rate, 2);
-        $totalDeductions = $estimatedTax + $estimatedPhilHealth;
-        $netPay = max(0, $basicSalary - $totalDeductions);
-
-        Payslip::query()->updateOrCreate(
-            [
-                'employee_id' => $employee->id,
-                'period_start' => now()->startOfMonth()->toDateString(),
-                'period_end' => now()->endOfMonth()->toDateString(),
-            ],
-            [
-                'gross_pay' => $basicSalary,
-                'total_deductions' => $totalDeductions,
-                'net_pay' => $netPay,
-                'earnings' => [
-                    ['label' => 'Basic Salary', 'amount' => $basicSalary],
-                ],
-                'deductions' => [
-                    ['label' => 'Estimated Tax', 'amount' => $estimatedTax],
-                    ['label' => 'Estimated PhilHealth', 'amount' => $estimatedPhilHealth],
-                ],
-                'released_at' => now()->toDateString(),
-            ]
-        );
+        return $this->success(message: 'Employee offboarded successfully.');
     }
 }

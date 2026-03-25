@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ApiResponse;
 use App\Models\Employee;
 use App\Models\Payslip;
 use Carbon\Carbon;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
 {
+    use ApiResponse;
+
     public function dashboard(): JsonResponse
     {
         $startOfMonth = now()->startOfMonth()->toDateString();
@@ -51,16 +54,14 @@ class AnalyticsController extends Controller
             })
             ->values();
 
-        return response()->json([
-            'data' => [
-                'stats' => [
-                    'total_employees' => $totalEmployees,
-                    'active_employees' => $activeEmployees,
-                    'total_payroll' => $currentMonthPayroll,
-                    'pending_payroll' => $pendingPayroll,
-                ],
-                'recent_activity' => $recentActivity,
+        return $this->success([
+            'stats' => [
+                'total_employees' => $totalEmployees,
+                'active_employees' => $activeEmployees,
+                'total_payroll' => $currentMonthPayroll,
+                'pending_payroll' => $pendingPayroll,
             ],
+            'recent_activity' => $recentActivity,
         ]);
     }
 
@@ -95,18 +96,16 @@ class AnalyticsController extends Controller
             })
             ->values();
 
-        return response()->json([
-            'data' => [
-                'stats' => [
-                    'gross_pay' => $grossPay,
-                    'deduction' => $totalDeductions,
-                    'net_pay' => $netPay,
-                ],
-                'recent_payroll' => $recentPayroll,
-                'period' => [
-                    'start' => $startDate,
-                    'end' => $endDate,
-                ],
+        return $this->success([
+            'stats' => [
+                'gross_pay' => $grossPay,
+                'deduction' => $totalDeductions,
+                'net_pay' => $netPay,
+            ],
+            'recent_payroll' => $recentPayroll,
+            'period' => [
+                'start' => $startDate,
+                'end' => $endDate,
             ],
         ]);
     }
@@ -169,15 +168,13 @@ class AnalyticsController extends Controller
             })
             ->values();
 
-        return response()->json([
-            'data' => [
-                'payroll_expenses' => $payrollExpenses,
-                'department_cost' => $departmentCost,
-                'monthly_report' => $monthlyReport,
-                'period' => [
-                    'start' => $startDate,
-                    'end' => $endDate,
-                ],
+        return $this->success([
+            'payroll_expenses' => $payrollExpenses,
+            'department_cost' => $departmentCost,
+            'monthly_report' => $monthlyReport,
+            'period' => [
+                'start' => $startDate,
+                'end' => $endDate,
             ],
         ]);
     }

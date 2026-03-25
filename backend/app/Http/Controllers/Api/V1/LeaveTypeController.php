@@ -3,17 +3,18 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ApiResponse;
 use App\Models\LeaveType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class LeaveTypeController extends Controller
 {
+    use ApiResponse;
+
     public function index(): JsonResponse
     {
-        return response()->json([
-            'data' => LeaveType::query()->orderBy('name')->get(),
-        ]);
+        return $this->success(LeaveType::query()->orderBy('name')->get());
     }
 
     public function store(Request $request): JsonResponse
@@ -28,9 +29,6 @@ class LeaveTypeController extends Controller
 
         $leaveType = LeaveType::create($validated);
 
-        return response()->json([
-            'data' => $leaveType,
-            'message' => 'Leave type created successfully.',
-        ], 201);
+        return $this->success($leaveType, 'Leave type created successfully.', 201);
     }
 }

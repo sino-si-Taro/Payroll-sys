@@ -3,14 +3,20 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ApiResponse;
 use App\Models\Employee;
-use App\Models\Payslip;
-use App\Models\PayrollSetting;
+use App\Services\PayslipCalculationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class HrEmployeeAccountController extends Controller
 {
+    use ApiResponse;
+
+    public function __construct(
+        private readonly PayslipCalculationService $payslipService,
+    ) {}
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -39,39 +45,10 @@ class HrEmployeeAccountController extends Controller
             'basic_salary' => $validated['basic_salary'] ?? 0,
         ])->load('department:id,name');
 
-        $settings = PayrollSetting::current();
-        $basicSalary = (float) ($validated['basic_salary'] ?? 0);
-        $estimatedTax = round($basicSalary * (float) $settings->tax_rate, 2);
-        $estimatedPhilHealth = round($basicSalary * (float) $settings->philhealth_rate, 2);
-        $totalDeductions = $estimatedTax + $estimatedPhilHealth;
-        $netPay = max(0, $basicSalary - $totalDeductions);
+        $this->payslipService->ensureMonthlyPayslip($employee);
 
-        Payslip::query()->updateOrCreate(
-            [
-                'employee_id' => $employee->id,
-                'period_start' => now()->startOfMonth()->toDateString(),
-                'period_end' => now()->endOfMonth()->toDateString(),
-            ],
-            [
-                'gross_pay' => $basicSalary,
-                'total_deductions' => $totalDeductions,
-                'net_pay' => $netPay,
-                'earnings' => [
-                    ['label' => 'Basic Salary', 'amount' => $basicSalary],
-                ],
-                'deductions' => [
-                    ['label' => 'Estimated Tax', 'amount' => $estimatedTax],
-                    ['label' => 'Estimated PhilHealth', 'amount' => $estimatedPhilHealth],
-                ],
-                'released_at' => now()->toDateString(),
-            ]
-        );
-
-        return response()->json([
-            'data' => [
-                'employee' => $employee,
-            ],
-            'message' => 'Employee created successfully.',
-        ], 201);
+        return $this->success([
+            'employee' => $employee,
+        ], 'Employee created successfully.', 201);
     }
 }

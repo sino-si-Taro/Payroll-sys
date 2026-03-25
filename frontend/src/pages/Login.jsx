@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authApi, extractData } from '../api';
-import { setAuthUser } from '../utils/auth';
+import { setAuth } from '../utils/auth';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -28,10 +28,10 @@ export default function Login() {
         return;
       }
 
-      setAuthUser({
-        ...data.user,
-        employee_profile: data.employee_profile || null,
-      });
+      setAuth(
+        { ...data.user, employee_profile: data.employee_profile || null },
+        data.token
+      );
       navigate(targetPath, { replace: true });
     } catch {
       setError('Invalid credentials. Please try again.');

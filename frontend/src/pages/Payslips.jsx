@@ -73,14 +73,14 @@ export default function Payslips() {
 
   const payslipItems = useMemo(() => payslips.map((payslip) => {
     const employee = {
-      name: payslip?.employee?.full_name || payslip?.employee?.employee_no || 'N/A',
+      name: payslip?.employee?.full_name || payslip?.employee?.employee_no || 'Deleted Employee',
       position: payslip?.employee?.position || 'N/A',
       id: payslip?.employee?.employee_no || 'N/A',
       payPeriod: `${formatPeriod(payslip?.period_start)} - ${formatPeriod(payslip?.period_end)}`,
     };
 
     const status = payslip?.employee?.employment_status;
-    const isHistorical = status !== 'active';
+    const isHistorical = status !== 'active' || payslip?.employee === null;
 
     const earnings = Array.isArray(payslip?.earnings) ? payslip.earnings : [];
     const deductions = Array.isArray(payslip?.deductions) ? payslip.deductions : [];

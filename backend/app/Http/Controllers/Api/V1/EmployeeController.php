@@ -210,15 +210,17 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Permanently delete an employee and all related data.
+     * Permanently delete an employee record.
      *
-     * Removes the employee record and all associated data including:
+     * Removes the employee record and associated data including:
      * - User account (if linked)
-     * - Payslips
      * - Leave requests
      *
+     * Note: Payslips are intentionally preserved and their employee_id is set to null
+     * so they remain accessible in the Historical tab for record-keeping purposes.
+     *
      * This is a hard delete operation and cannot be undone. The employee record
-     * and all their data will be permanently removed from the system.
+     * and most related data will be permanently removed from the system.
      *
      * @param Employee $employee The employee to delete
      * @return JsonResponse Success message
@@ -229,9 +231,6 @@ class EmployeeController extends Controller
         $employee->load('user');
         $linkedUser = $employee->user;
 
-        // Delete all payslips for this employee
-        $employee->payslips()->delete();
-
         // Delete all leave requests for this employee
         $employee->leaveRequests()->delete();
 
@@ -241,8 +240,9 @@ class EmployeeController extends Controller
         }
 
         // Permanently delete the employee record
+        // Note: Payslips are preserved due to the nullOnDelete foreign key constraint
         $employee->delete();
 
-        return $this->success(message: 'Employee and all related data permanently deleted.');
+        return $this->success(message: 'Employee deleted. Payslips have been preserved in the system.');
     }
 }

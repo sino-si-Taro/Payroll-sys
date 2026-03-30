@@ -222,9 +222,9 @@ export default function Employees() {
   };
 
   const handleDeleteEmployee = async (employee) => {
-    // Warn user that this is a permanent deletion of employee and all related data
+    // Warn user that this is a permanent deletion of employee record but payslips are preserved
     const shouldDelete = window.confirm(
-      `Permanently delete employee ${employee.full_name || employee.employee_no} and all related data (payslips, leave requests, etc.)?\n\nThis action cannot be undone.`
+      `Permanently delete employee ${employee.full_name || employee.employee_no} and all related data (leave requests, etc.)?\n\nNote: Payslips will be preserved and accessible in the Historical tab.\n\nThis action cannot be undone.`
     );
     if (!shouldDelete) {
       return;

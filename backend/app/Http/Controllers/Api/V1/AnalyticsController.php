@@ -38,7 +38,7 @@ class AnalyticsController extends Controller
      * - total_employees: Count of all employees including inactive
      * - active_employees: Count of employees with 'active' status only
      * - inactive_employees: Count of employees marked as inactive
-     * - total_payroll: Total net pay for the current month
+     * - total_payroll: Total net pay for the current month from active and pending employees
      * - pending_payroll: Count of active employees without a payslip this month
      * - recent_activity: Last 5 payslips released
      *
@@ -59,8 +59,11 @@ class AnalyticsController extends Controller
         // Count inactive employees for visibility when status changes
         $inactiveEmployees = Employee::query()->where('employment_status', 'inactive')->count();
 
-        // Calculate total payroll for current month
+        // Calculate total payroll for current month from active and pending employees
         $currentMonthPayroll = (float) Payslip::query()
+            ->whereHas('employee', function ($query) {
+                $query->whereIn('employment_status', ['active', 'pending']);
+            })
             ->whereDate('period_start', '>=', $startOfMonth)
             ->whereDate('period_end', '<=', $endOfMonth)
             ->sum('net_pay');
